@@ -152,14 +152,14 @@ services:
   # FRONTEND
   # -------------------
   frontend:
-    build: ./frontend
-    container_name: frontend
-    depends_on:
-      - catalog-service
-      - cart-service
-      - auth-service
-    ports:
-      - "3000:3000"
+  build: ./frontend
+  container_name: frontend
+  depends_on:
+    - catalog-service
+    - cart-service
+    - auth-service
+  ports:
+    - "3000:80"
 
 volumes:
   postgres_data:
