@@ -6,6 +6,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -18,7 +19,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   # -------------------
   # REDIS
@@ -26,13 +27,14 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   # -------------------
   # KAFKA (KRaft mode)
@@ -40,9 +42,9 @@ services:
   kafka:
     image: apache/kafka:3.7.1
     container_name: kafka
+    restart: unless-stopped
     ports:
       - "9092:9092"
-      - "9093:9093"
     environment:
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
 
@@ -62,40 +64,47 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server kafka:9092 --list || exit 0"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-
   # -------------------
-  # AUTH SERVICE (Node.js)
+  # AUTH SERVICE
   # -------------------
   auth-service:
     build: ./services/auth-service
     container_name: auth-service
+    restart: unless-stopped
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
     environment:
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres
-      DATABASE_NAME: nimbus
+      # support BOTH styles (important because your logs show mismatch)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nimbus
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: nimbus
+
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
     ports:
       - "8083:8080"
 
   # -------------------
-  # CATALOG SERVICE (Spring)
+  # CATALOG SERVICE
   # -------------------
   catalog-service:
     build: ./services/catalog-service
     container_name: catalog-service
+    restart: unless-stopped
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nimbus
       SPRING_DATASOURCE_USERNAME: postgres
@@ -110,9 +119,12 @@ services:
   cart-service:
     build: ./services/cart-service
     container_name: cart-service
+    restart: unless-stopped
     depends_on:
-      - redis
-      - kafka
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -121,14 +133,17 @@ services:
       - "8082:8080"
 
   # -------------------
-  # ORDER SERVICE (Spring)
+  # ORDER SERVICE
   # -------------------
   order-service:
     build: ./services/order-service
     container_name: order-service
+    restart: unless-stopped
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nimbus
       SPRING_DATASOURCE_USERNAME: postgres
@@ -143,19 +158,22 @@ services:
   notification-service:
     build: ./services/notification-service
     container_name: notification-service
+    restart: unless-stopped
     depends_on:
-      - kafka
+      kafka:
+        condition: service_started
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8085:8080"
 
   # -------------------
-  # FRONTEND (FIXED INDENTATION)
+  # FRONTEND
   # -------------------
   frontend:
     build: ./frontend
     container_name: frontend
+    restart: unless-stopped
     depends_on:
       - catalog-service
       - cart-service
