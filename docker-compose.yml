@@ -40,7 +40,7 @@ services:
   # KAFKA (FIXED)
   # -------------------
   kafka:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:3.6.1
     container_name: kafka
     ports:
       - "9092:9092"
