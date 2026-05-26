@@ -70,18 +70,14 @@ services:
   auth-service:
   build: ./services/auth-service
   container_name: auth-service
-  restart: unless-stopped
   depends_on:
-    postgres:
-      condition: service_started
-    kafka:
-      condition: service_started
+    - postgres
+    - kafka
   environment:
-    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nimbus
-    SPRING_DATASOURCE_USERNAME: postgres
-    SPRING_DATASOURCE_PASSWORD: postgres
-
+    DATABASE_URL: postgres://postgres:postgres@postgres:5432/nimbus
     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    PORT: 3001
+    JWT_SECRET: change-me
   ports:
     - "8083:3001"
 
