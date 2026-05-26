@@ -78,9 +78,11 @@ services:
       - postgres
       - kafka
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nimbus
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: nimbus
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8083:8080"
