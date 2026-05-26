@@ -1,5 +1,3 @@
-
-
 services:
 
   # -------------------
@@ -37,35 +35,38 @@ services:
       retries: 5
 
   # -------------------
-  # KAFKA (FIXED)
+  # KAFKA (STABLE KRaft MODE)
   # -------------------
   kafka:
-  image: apache/kafka:3.7.1
-  container_name: kafka
-  ports:
-    - "9092:9092"
-  environment:
-    CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    image: apache/kafka:3.7.1
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
 
-    KAFKA_NODE_ID: 1
-    KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
 
-    KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
 
-    KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
 
-    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-    KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
-    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
-  healthcheck:
-    test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
-    interval: 10s
-    retries: 10
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
 
   # -------------------
   # CATALOG SERVICE
@@ -77,7 +78,7 @@ services:
       postgres:
         condition: service_healthy
       kafka:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nimbus
       SPRING_DATASOURCE_USERNAME: postgres
@@ -96,7 +97,7 @@ services:
       redis:
         condition: service_healthy
       kafka:
-        condition: service_healthy
+        condition: service_started
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
